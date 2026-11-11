@@ -2,63 +2,66 @@ import Link from 'next/link';
 
 export default function ComingSoonPage() {
   return (
-    <div className="min-h-screen bg-[#1E3A8A] text-white flex flex-col justify-between p-6 dir-rtl text-right" dir="rtl">
-      {/* Header Badge */}
-      <header className="max-w-4xl mx-auto w-full pt-6 flex justify-between items-center">
-        <div className="text-2xl font-black tracking-wider">
-          كشكول <span className="text-[#FBBF24]">.</span>
+    <div className="min-h-screen bg-[#0F172A] text-slate-100 flex flex-col justify-between p-6 dir-rtl text-right" dir="rtl">
+      {/* Background Decorator */}
+      <div className="fixed inset-0 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-[#1E3A8A]/40 via-transparent to-transparent pointer-events-none" />
+
+      {/* Header */}
+      <header className="max-w-5xl mx-auto w-full pt-4 flex justify-between items-center z-10">
+        <div className="text-2xl font-black tracking-tight text-white flex items-center gap-2">
+          <span className="w-8 h-8 rounded-lg bg-[#FBBF24] text-[#1E3A8A] flex items-center justify-center text-lg font-extrabold">ك</span>
+          <span>كشكول</span>
         </div>
-        <span className="bg-white/10 text-[#FBBF24] text-xs px-3 py-1.5 rounded-full border border-white/20 font-bold backdrop-blur-sm">
-          منصة التعليم لكل المراحل 📚
+        <span className="bg-slate-800/80 text-[#FBBF24] text-xs px-3.5 py-1.5 rounded-md border border-slate-700 font-semibold backdrop-blur-md">
+          المنصة التعليمية المتكاملة
         </span>
       </header>
 
       {/* Hero Section */}
-      <main className="max-w-2xl mx-auto text-center my-auto py-12 flex flex-col items-center">
-        <div className="text-6xl mb-6 animate-bounce">🎒✨</div>
-        
-        <div className="inline-block bg-[#FBBF24] text-[#1E3A8A] font-black text-xs px-4 py-1.5 rounded-full mb-6 uppercase tracking-widest shadow-md">
-          جاري التجهيز للإنطلاق الكبير
+      <main className="max-w-3xl mx-auto text-center my-auto py-16 flex flex-col items-center z-10">
+        <div className="inline-flex items-center gap-2 bg-slate-800/60 border border-slate-700 px-4 py-1.5 rounded-full mb-8 backdrop-blur-md">
+          <span className="w-2 h-2 rounded-full bg-[#FBBF24] animate-pulse" />
+          <span className="text-xs font-medium text-slate-300">الإنطلاق القادم — تجربة تعليمية حديثة</span>
         </div>
 
-        <h1 className="text-4xl md:text-6xl font-black leading-tight text-white mb-6">
-          منصة <span className="text-[#FBBF24] underline underline-offset-8 decoration-wavy decoration-[#FBBF24]">كشكول</span> لكل المراحل التعليمية!
+        <h1 className="text-4xl sm:text-6xl font-black text-white leading-tight tracking-tight mb-6">
+          تعلم أذكى، أسرع، وبدون تعقيد مع <span className="text-[#FBBF24]">كشكول</span>
         </h1>
 
-        <p className="text-lg md:text-xl text-slate-200 mb-8 max-w-lg leading-relaxed">
-          ابتدائي، إعدادي، أو ثانوي... بنجهّزلك أقوى تجربة مذاكرة: ملخصات، امتحانات، ومتابعة أول بأول من غير تعقيد. انتظرونا قريباً جداً 🚀
+        <p className="text-base sm:text-lg text-slate-400 mb-10 max-w-xl leading-relaxed">
+          منصة تعليمية مصممة خصيصاً لتنظيم الدراسة لكل المراحل. ملخصات تفاعلية، متابعة دقيقة، وتفعيل فوري لحصصك.
         </p>
 
-        {/* Academic Stages Badges */}
-        <div className="grid grid-cols-3 gap-3 w-full max-w-md mb-8">
-          <div className="bg-white/10 border border-white/20 p-3 rounded-xl text-center">
-            <span className="block text-xl mb-1">🌱</span>
-            <span className="font-bold text-xs text-[#FBBF24]">ابتدائي</span>
+        {/* Educational Stages Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full mb-10 text-right">
+          <div className="bg-slate-800/40 border border-slate-800 p-4 rounded-xl backdrop-blur-sm">
+            <span className="text-xs font-bold text-[#FBBF24] uppercase tracking-wider block mb-1">المرحلة الابتدائية</span>
+            <p className="text-slate-300 text-sm font-medium">تأسيس متين ومفاهيم مبسطة</p>
           </div>
-          <div className="bg-white/10 border border-white/20 p-3 rounded-xl text-center">
-            <span className="block text-xl mb-1">⚡</span>
-            <span className="font-bold text-xs text-[#FBBF24]">إعدادي</span>
+          <div className="bg-slate-800/40 border border-slate-800 p-4 rounded-xl backdrop-blur-sm">
+            <span className="text-xs font-bold text-[#FBBF24] uppercase tracking-wider block mb-1">المرحلة الإعدادية</span>
+            <p className="text-slate-300 text-sm font-medium">تمكين وتدريب مستمر على الامتحانات</p>
           </div>
-          <div className="bg-white/10 border border-white/20 p-3 rounded-xl text-center">
-            <span className="block text-xl mb-1">🎯</span>
-            <span className="font-bold text-xs text-[#FBBF24]">ثانوي</span>
+          <div className="bg-slate-800/40 border border-slate-800 p-4 rounded-xl backdrop-blur-sm">
+            <span className="text-xs font-bold text-[#FBBF24] uppercase tracking-wider block mb-1">المرحلة الثانوية</span>
+            <p className="text-slate-300 text-sm font-medium">تغطية شاملا وورق دروس مكثف</p>
           </div>
         </div>
 
-        {/* Action Button */}
-        <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md">
+        {/* Actions */}
+        <div className="flex flex-col sm:flex-row gap-3 w-full max-w-md">
           <Link
             href="/login"
-            className="w-full py-3.5 bg-[#FBBF24] hover:bg-amber-400 text-[#1E3A8A] font-black rounded-xl text-center transition shadow-lg hover:scale-[1.02] active:scale-95"
+            className="w-full py-3.5 bg-[#FBBF24] hover:bg-amber-400 text-[#0F172A] font-bold rounded-xl text-center transition-all duration-200 shadow-md hover:shadow-amber-500/10 active:scale-[0.99]"
           >
-            تسجيل دخول الطلاب (تجريبي) 🔑
+            دخول تجريبي للطلاب
           </Link>
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="max-w-4xl mx-auto w-full text-center pb-4 text-xs text-slate-400">
-        © 2026 كشكول — جميع الحقوق محفوظة لجميع المراحل التعليمية.
+      <footer className="max-w-5xl mx-auto w-full text-center pb-4 text-xs text-slate-500 z-10 border-t border-slate-800/60 pt-4">
+        © 2026 كشكول. جميع الحقوق محفوظة.
       </footer>
     </div>
   );
