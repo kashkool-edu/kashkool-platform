@@ -9,7 +9,7 @@ export default function ComingSoonPage() {
           كشكول <span className="text-[#FBBF24]">.</span>
         </div>
         <span className="bg-white/10 text-[#FBBF24] text-xs px-3 py-1.5 rounded-full border border-white/20 font-bold backdrop-blur-sm">
-          تطبيق الثانوية العامة ⚡
+          منصة التعليم لكل المراحل 📚
         </span>
       </header>
 
@@ -22,26 +22,26 @@ export default function ComingSoonPage() {
         </div>
 
         <h1 className="text-4xl md:text-6xl font-black leading-tight text-white mb-6">
-          بنحضّرك لـ <span className="text-[#FBBF24] underline underline-offset-8 decoration-wavy decoration-[#FBBF24]">كشكول</span> جديد خالص!
+          منصة <span className="text-[#FBBF24] underline underline-offset-8 decoration-wavy decoration-[#FBBF24]">كشكول</span> لكل المراحل التعليمية!
         </h1>
 
         <p className="text-lg md:text-xl text-slate-200 mb-8 max-w-lg leading-relaxed">
-          فرْم المناهج والملخصات من غير ما تسقط مننا في السكة. شغالين بنعدّل ونجهّز أقوى تجربة للثانوية العامة... انتظرونا قريباً جداً 🚀
+          ابتدائي، إعدادي، أو ثانوي... بنجهّزلك أقوى تجربة مذاكرة: ملخصات، امتحانات، ومتابعة أول بأول من غير تعقيد. انتظرونا قريباً جداً 🚀
         </p>
 
-        {/* Feature Teasers */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full mb-10 text-right">
-          <div className="bg-white/5 border border-white/10 p-4 rounded-xl text-center">
-            <div className="text-2xl mb-1">📝</div>
-            <div className="font-bold text-sm text-white">ورق الدرس جاهز</div>
+        {/* Academic Stages Badges */}
+        <div className="grid grid-cols-3 gap-3 w-full max-w-md mb-8">
+          <div className="bg-white/10 border border-white/20 p-3 rounded-xl text-center">
+            <span className="block text-xl mb-1">🌱</span>
+            <span className="font-bold text-xs text-[#FBBF24]">ابتدائي</span>
           </div>
-          <div className="bg-white/5 border border-white/10 p-4 rounded-xl text-center">
-            <div className="text-2xl mb-1">⚡</div>
-            <div className="font-bold text-sm text-white">تفعيل فوري بالباي</div>
+          <div className="bg-white/10 border border-white/20 p-3 rounded-xl text-center">
+            <span className="block text-xl mb-1">⚡</span>
+            <span className="font-bold text-xs text-[#FBBF24]">إعدادي</span>
           </div>
-          <div className="bg-white/5 border border-white/10 p-4 rounded-xl text-center">
-            <div className="text-2xl mb-1">🎯</div>
-            <div className="font-bold text-sm text-white">حل امتحانات السنين</div>
+          <div className="bg-white/10 border border-white/20 p-3 rounded-xl text-center">
+            <span className="block text-xl mb-1">🎯</span>
+            <span className="font-bold text-xs text-[#FBBF24]">ثانوي</span>
           </div>
         </div>
 
@@ -58,7 +58,7 @@ export default function ComingSoonPage() {
 
       {/* Footer */}
       <footer className="max-w-4xl mx-auto w-full text-center pb-4 text-xs text-slate-400">
-        © {new Date().getFullYear()} كشكول — جميع الحقوق محفوظة لطلاب الثانوية العامة.
+        © 2026 كشكول — جميع الحقوق محفوظة لجميع المراحل التعليمية.
       </footer>
     </div>
   );
