@@ -46,6 +46,8 @@ export default function ComingSoonPage() {
           </div>
         </div>
 
+        <p className="text-xl font-bold text-[#FBBF24]">انتظرونا قريبا</p>
+
       </main>
 
       {/* Footer */}
