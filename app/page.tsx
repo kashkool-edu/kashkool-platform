@@ -1,5 +1,3 @@
-import Link from 'next/link';
-
 export default function ComingSoonPage() {
   return (
     <div className="min-h-screen bg-[#0F172A] text-slate-100 flex flex-col justify-between p-6 dir-rtl text-right" dir="rtl">
@@ -48,15 +46,6 @@ export default function ComingSoonPage() {
           </div>
         </div>
 
-        {/* Actions */}
-        <div className="flex flex-col sm:flex-row gap-3 w-full max-w-md">
-          <Link
-            href="/login"
-            className="w-full py-3.5 bg-[#FBBF24] hover:bg-amber-400 text-[#0F172A] font-bold rounded-xl text-center transition-all duration-200 shadow-md hover:shadow-amber-500/10 active:scale-[0.99]"
-          >
-            دخول تجريبي للطلاب
-          </Link>
-        </div>
       </main>
 
       {/* Footer */}
