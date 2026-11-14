@@ -108,7 +108,7 @@ export default function LoginPage() {
       return;
     }
 
-    if (data.user) {
+    if (data.user && data.session) {
       const { error: profileError } = await supabase.from('profiles').upsert({
         id: data.user.id,
         full_name: fullName.trim(),
@@ -127,6 +127,11 @@ export default function LoginPage() {
     }
 
     setLoading(false);
+    if (!data.session) {
+      setErrorMsg('تم إنشاء الحساب! يرجى تأكيد بريدك الإلكتروني ثم تسجيل الدخول.');
+      setIsSignUp(false);
+      return;
+    }
     router.push('/dashboard');
   };
 
