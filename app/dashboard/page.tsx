@@ -14,7 +14,11 @@ interface Course {
   grade_level: number;
   price: number;
   term_price: number | null;
-  thumbnail_url?: string | null;
+  teacher_id: string | null;
+  profiles?: {
+    full_name: string | null;
+    teacher_subject: string | null;
+  } | null;
 }
 
 interface Bundle {
@@ -47,7 +51,7 @@ export default function StudentDashboardStorePage() {
   const router = useRouter();
 
   const [studentName, setStudentName] = useState('طالب كشكول');
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [userRole, setUserRole] = useState<'student' | 'teacher' | 'admin'>('student');
 
   const [courses, setCourses] = useState<Course[]>([]);
   const [bundles, setBundles] = useState<Bundle[]>([]);
@@ -81,7 +85,21 @@ export default function StudentDashboardStorePage() {
           .select('full_name, role, academic_stage')
           .eq('id', user.id)
           .single(),
-        supabase.from('courses').select('*').order('created_at', { ascending: false }),
+        supabase
+          .from('courses')
+          .select(`
+            id,
+            title,
+            description,
+            subject,
+            academic_stage,
+            grade_level,
+            price,
+            term_price,
+            teacher_id,
+            profiles:teacher_id ( full_name, teacher_subject )
+          `)
+          .order('created_at', { ascending: false }),
         supabase
           .from('bundles')
           .select(`
@@ -107,10 +125,10 @@ export default function StudentDashboardStorePage() {
 
       if (profile) {
         setStudentName(profile.full_name || user.email?.split('@')[0] || 'طالب كشكول');
-        setIsAdmin(profile.role === 'admin');
+        setUserRole((profile.role as 'student' | 'teacher' | 'admin') || 'student');
       }
 
-      if (coursesData) setCourses(coursesData);
+      if (coursesData) setCourses(coursesData as unknown as Course[]);
 
       if (bundlesData) {
         const formattedBundles: Bundle[] = bundlesData.map((b: any) => ({
@@ -151,7 +169,7 @@ export default function StudentDashboardStorePage() {
   };
 
   const getCourseAccessState = (courseId: string) => {
-    if (isAdmin) return { status: 'active' as const, daysLeft: null };
+    if (userRole === 'admin') return { status: 'active' as const, daysLeft: null };
     const now = new Date();
     const courseSubs = subscriptions.filter((s) => s.course_id === courseId);
 
@@ -210,10 +228,12 @@ export default function StudentDashboardStorePage() {
   const filteredCourses = courses.filter((c) => {
     const matchesStage = stageFilter === 'all' || c.academic_stage === stageFilter;
     const q = searchQuery.trim().toLowerCase();
+    const teacherName = (c.profiles?.full_name || '').toLowerCase();
     const matchesQuery =
       !q ||
       c.title.toLowerCase().includes(q) ||
       c.subject.toLowerCase().includes(q) ||
+      teacherName.includes(q) ||
       (c.description || '').toLowerCase().includes(q);
     return matchesStage && matchesQuery;
   });
@@ -241,7 +261,15 @@ export default function StudentDashboardStorePage() {
           </div>
 
           <div className="flex items-center gap-2.5">
-            {isAdmin && (
+            {(userRole === 'teacher' || userRole === 'admin') && (
+              <Link
+                href="/teacher"
+                className="text-xs font-black bg-[#1E3A8A] hover:bg-blue-800 text-white px-3.5 py-2 rounded-xl transition"
+              >
+                لوحة المدرس
+              </Link>
+            )}
+            {userRole === 'admin' && (
               <Link
                 href="/admin"
                 className="text-xs font-black bg-[#FBBF24]/15 border border-[#FBBF24]/40 text-[#FBBF24] hover:bg-[#FBBF24]/25 px-3.5 py-2 rounded-xl transition"
@@ -293,7 +321,7 @@ export default function StudentDashboardStorePage() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="ابحث عن مادة أو كورس (مثال: فيزياء، نحو...)"
+              placeholder="ابحث عن مادة، كورس، أو اسم المدرس..."
               className="w-full sm:w-80 bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-[#FBBF24]"
             />
           )}
@@ -429,6 +457,12 @@ export default function StudentDashboardStorePage() {
                             {course.title}
                           </h3>
 
+                          {course.profiles?.full_name && (
+                            <div className="text-xs font-bold text-emerald-400">
+                              👨‍🏫 أ/ {course.profiles.full_name}
+                            </div>
+                          )}
+
                           {course.description && (
                             <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">
                               {course.description}
@@ -528,9 +562,7 @@ export default function StudentDashboardStorePage() {
                           </span>
                           {access.status === 'active' && (
                             <span className="text-[11px] font-bold bg-emerald-500/15 text-emerald-300 px-2.5 py-0.5 rounded">
-                              {access.daysLeft
-                                ? `متبقي ${access.daysLeft} يوم`
-                                : 'مفعّل'}
+                              {access.daysLeft ? `متبقي ${access.daysLeft} يوم` : 'مفعّل'}
                             </span>
                           )}
                           {access.status === 'pending' && (
@@ -545,6 +577,11 @@ export default function StudentDashboardStorePage() {
                           )}
                         </div>
                         <h3 className="text-base font-black text-white">{course.title}</h3>
+                        {course.profiles?.full_name && (
+                          <p className="text-xs text-slate-400 mt-1">
+                            أ/ {course.profiles.full_name}
+                          </p>
+                        )}
                       </div>
 
                       {access.status === 'active' ? (
