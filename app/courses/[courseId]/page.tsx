@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import ContentShield from '@/components/ContentShield';
+import LessonQuiz, { QuizQuestion } from '@/components/LessonQuiz';
 
 interface Course {
   id: string;
@@ -22,6 +23,12 @@ interface Lesson {
   warak_pdf_url: string | null;
   order_index: number;
   is_free_preview: boolean;
+}
+
+interface ProgressRecord {
+  lesson_id: string;
+  is_completed: boolean;
+  quiz_score: number | null;
 }
 
 function getOrCreateDeviceId(): string {
@@ -47,6 +54,10 @@ function CoursePlayerContent() {
   const [deviceBlocked, setDeviceBlocked] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  const [progressMap, setProgressMap] = useState<Record<string, ProgressRecord>>({});
+  const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
+  const [markingComplete, setMarkingComplete] = useState(false);
+
   const [studentInfo, setStudentInfo] = useState({
     id: '',
     name: 'طالب كشكول',
@@ -66,17 +77,13 @@ function CoursePlayerContent() {
       }
 
       // 1. Fetch Profile & Enforce Single-Device Lock
-      const { data: profile, error: profileError } = await supabase
+      const { data: profile } = await supabase
         .from('profiles')
         .select('role, full_name, phone_number, active_device_id')
         .eq('id', user.id)
         .single();
 
       if (!isMounted) return;
-      if (profileError) {
-        console.error('Profile fetch error:', profileError);
-      }
-
       const localDeviceId = getOrCreateDeviceId();
       const isAdmin = profile?.role === 'admin';
 
@@ -96,7 +103,6 @@ function CoursePlayerContent() {
 
       if (!isMounted) return;
 
-      // Unique channel topic per mount prevents React Strict Mode duplicate subscription error
       channel = supabase
         .channel(`device-lock-${user.id}-${crypto.randomUUID()}`)
         .on(
@@ -145,8 +151,7 @@ function CoursePlayerContent() {
         .maybeSingle();
 
       if (!isMounted) return;
-      const authorized = isAdmin || sub?.status === 'approved';
-      setHasAccess(authorized);
+      setHasAccess(isAdmin || sub?.status === 'approved');
 
       // 4. Fetch Lessons
       const { data: lessonsData } = await supabase
@@ -161,6 +166,22 @@ function CoursePlayerContent() {
         setActiveLesson(lessonsData[0]);
       }
 
+      // 5. Fetch Student Lesson Progress
+      const { data: progressData } = await supabase
+        .from('lesson_progress')
+        .select('lesson_id, is_completed, quiz_score')
+        .eq('user_id', user.id)
+        .eq('course_id', courseId);
+
+      if (!isMounted) return;
+      if (progressData) {
+        const map: Record<string, ProgressRecord> = {};
+        progressData.forEach((p) => {
+          map[p.lesson_id] = p;
+        });
+        setProgressMap(map);
+      }
+
       setLoading(false);
     }
 
@@ -168,11 +189,68 @@ function CoursePlayerContent() {
 
     return () => {
       isMounted = false;
-      if (channel) {
-        supabase.removeChannel(channel);
-      }
+      if (channel) supabase.removeChannel(channel);
     };
   }, [courseId, router]);
+
+  // Fetch quiz questions whenever activeLesson changes
+  useEffect(() => {
+    let active = true;
+    async function loadQuiz() {
+      if (!activeLesson?.id) {
+        setQuizQuestions([]);
+        return;
+      }
+      const { data } = await supabase
+        .from('quiz_questions')
+        .select('*')
+        .eq('lesson_id', activeLesson.id)
+        .order('order_index', { ascending: true });
+
+      if (active) {
+        setQuizQuestions((data as QuizQuestion[]) || []);
+      }
+    }
+    loadQuiz();
+    return () => {
+      active = false;
+    };
+  }, [activeLesson?.id]);
+
+  const handleSaveProgress = async (lessonId: string, completed: boolean, quizScore?: number) => {
+    if (!studentInfo.id) return;
+    setMarkingComplete(true);
+
+    const existing = progressMap[lessonId];
+    const bestScore =
+      quizScore !== undefined
+        ? Math.max(quizScore, existing?.quiz_score ?? 0)
+        : existing?.quiz_score ?? null;
+
+    const { error } = await supabase.from('lesson_progress').upsert(
+      {
+        user_id: studentInfo.id,
+        lesson_id: lessonId,
+        course_id: courseId,
+        is_completed: completed,
+        quiz_score: bestScore,
+        completed_at: new Date().toISOString(),
+      },
+      { onConflict: 'user_id,lesson_id' }
+    );
+
+    if (!error) {
+      setProgressMap((prev) => ({
+        ...prev,
+        [lessonId]: {
+          lesson_id: lessonId,
+          is_completed: completed,
+          quiz_score: bestScore,
+        },
+      }));
+    }
+    setMarkingComplete(false);
+  };
 
   if (loading) {
     return (
@@ -203,6 +281,10 @@ function CoursePlayerContent() {
       </div>
     );
   }
+
+  const completedCount = lessons.filter((l) => progressMap[l.id]?.is_completed).length;
+  const progressPercent = lessons.length > 0 ? Math.round((completedCount / lessons.length) * 100) : 0;
+  const isCurrentLessonDone = activeLesson ? Boolean(progressMap[activeLesson.id]?.is_completed) : false;
 
   return (
     <div className="min-h-screen bg-[#0F172A] text-slate-100 dir-rtl text-right" dir="rtl">
@@ -275,50 +357,76 @@ function CoursePlayerContent() {
               </div>
 
               {activeLesson ? (
-                <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-                  <ContentShield
-                    studentName={studentInfo.name}
-                    studentPhone={studentInfo.phone}
-                    studentId={studentInfo.id}
-                  >
-                    {activeTab === 'video' ? (
-                      <div className="relative aspect-video w-full h-full bg-black">
-                        {/* Transparent shields over YouTube title & logo */}
-                        <div className="absolute top-0 left-0 right-0 h-14 z-20 bg-transparent" />
-                        <div className="absolute bottom-0 right-0 w-36 h-12 z-20 bg-transparent" />
+                <>
+                  <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+                    <ContentShield
+                      studentName={studentInfo.name}
+                      studentPhone={studentInfo.phone}
+                      studentId={studentInfo.id}
+                    >
+                      {activeTab === 'video' ? (
+                        <div className="relative aspect-video w-full h-full bg-black">
+                          <div className="absolute top-0 left-0 right-0 h-14 z-20 bg-transparent" />
+                          <div className="absolute bottom-0 right-0 w-36 h-12 z-20 bg-transparent" />
 
-                        <iframe
-                          className="w-full h-full"
-                          src={`https://www.youtube-nocookie.com/embed/${activeLesson.youtube_video_id}?rel=0&modestbranding=1&iv_load_policy=3&disablekb=1&enablejsapi=1&fs=0`}
-                          title={activeLesson.title}
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        />
-                      </div>
-                    ) : (
-                      <div className="w-full h-[650px] bg-slate-950 flex flex-col">
-                        <div className="px-4 py-2.5 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
-                          <span className="text-xs font-bold text-[#FBBF24]">ملخص ورق الدرس (محمي بعلامة مائية)</span>
+                          <iframe
+                            className="w-full h-full"
+                            src={`https://www.youtube-nocookie.com/embed/${activeLesson.youtube_video_id}?rel=0&modestbranding=1&iv_load_policy=3&disablekb=1&enablejsapi=1&fs=0`}
+                            title={activeLesson.title}
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          />
                         </div>
-                        <iframe
-                          src={`${activeLesson.warak_pdf_url}#toolbar=0&navpanes=0`}
-                          className="w-full flex-1 border-0"
-                          title="Warak El-Dars PDF"
-                        />
-                      </div>
-                    )}
-                  </ContentShield>
+                      ) : (
+                        <div className="w-full h-[650px] bg-slate-950 flex flex-col">
+                          <div className="px-4 py-2.5 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
+                            <span className="text-xs font-bold text-[#FBBF24]">ملخص ورق الدرس (محمي بعلامة مائية)</span>
+                          </div>
+                          <iframe
+                            src={`${activeLesson.warak_pdf_url}#toolbar=0&navpanes=0`}
+                            className="w-full flex-1 border-0"
+                            title="Warak El-Dars PDF"
+                          />
+                        </div>
+                      )}
+                    </ContentShield>
 
-                  <div className="p-5 sm:p-6">
-                    <h2 className="text-lg sm:text-xl font-black text-white mb-2">
-                      {activeLesson.title}
-                    </h2>
-                    {activeLesson.description && (
-                      <p className="text-sm text-slate-400 leading-relaxed">
-                        {activeLesson.description}
-                      </p>
-                    )}
+                    <div className="p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div>
+                        <h2 className="text-lg sm:text-xl font-black text-white mb-1.5">
+                          {activeLesson.title}
+                        </h2>
+                        {activeLesson.description && (
+                          <p className="text-sm text-slate-400 leading-relaxed">
+                            {activeLesson.description}
+                          </p>
+                        )}
+                      </div>
+
+                      <button
+                        type="button"
+                        disabled={markingComplete}
+                        onClick={() => handleSaveProgress(activeLesson.id, !isCurrentLessonDone)}
+                        className={`shrink-0 px-4 py-2.5 rounded-xl text-xs font-black transition cursor-pointer border ${
+                          isCurrentLessonDone
+                            ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/25'
+                            : 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700'
+                        }`}
+                      >
+                        {isCurrentLessonDone ? 'تم إكمال الدرس ✓' : 'تحديد كمكتمل'}
+                      </button>
+                    </div>
                   </div>
-                </div>
+
+                  {/* End-of-Lesson Multiple-Choice Quiz */}
+                  <LessonQuiz
+                    key={activeLesson.id}
+                    questions={quizQuestions}
+                    previousScore={progressMap[activeLesson.id]?.quiz_score ?? null}
+                    onCompleteQuiz={async (score) => {
+                      await handleSaveProgress(activeLesson.id, score >= 50 || isCurrentLessonDone, score);
+                    }}
+                  />
+                </>
               ) : (
                 <div className="bg-slate-800/30 border border-slate-800 rounded-2xl p-12 text-center text-slate-400 text-sm">
                   لم يتم إضافة دروس لهذا الكورس بعد.
@@ -326,15 +434,29 @@ function CoursePlayerContent() {
               )}
             </div>
 
+            {/* Sidebar: Course Progress + Lessons List */}
             <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 h-fit">
-              <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-800">
-                <h3 className="font-black text-sm text-white">محتوى الكورس</h3>
-                <span className="text-xs text-slate-400">{lessons.length} دروس</span>
+              <div className="pb-3 mb-3 border-b border-slate-800">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-black text-sm text-white">محتوى الكورس</h3>
+                  <span className="text-xs font-bold text-[#FBBF24]">
+                    {completedCount}/{lessons.length} ({progressPercent}%)
+                  </span>
+                </div>
+                <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-emerald-500 transition-all duration-500"
+                    style={{ width: `${progressPercent}%` }}
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">
                 {lessons.map((lesson, idx) => {
                   const isSelected = activeLesson?.id === lesson.id;
+                  const isDone = Boolean(progressMap[lesson.id]?.is_completed);
+                  const quizScore = progressMap[lesson.id]?.quiz_score;
+
                   return (
                     <button
                       key={lesson.id}
@@ -350,18 +472,29 @@ function CoursePlayerContent() {
                     >
                       <span
                         className={`w-6 h-6 rounded-md text-xs font-black flex items-center justify-center shrink-0 mt-0.5 ${
-                          isSelected ? 'bg-[#FBBF24] text-[#0F172A]' : 'bg-slate-800 text-slate-400'
+                          isDone
+                            ? 'bg-emerald-500 text-slate-950'
+                            : isSelected
+                            ? 'bg-[#FBBF24] text-[#0F172A]'
+                            : 'bg-slate-800 text-slate-400'
                         }`}
                       >
-                        {idx + 1}
+                        {isDone ? '✓' : idx + 1}
                       </span>
                       <div className="flex-1">
                         <p className="text-xs sm:text-sm font-bold leading-snug">{lesson.title}</p>
-                        {lesson.warak_pdf_url && (
-                          <span className="inline-block mt-1.5 text-[10px] font-bold text-[#FBBF24] bg-[#FBBF24]/10 px-2 py-0.5 rounded">
-                            + ورق الدرس PDF
-                          </span>
-                        )}
+                        <div className="flex flex-wrap gap-1.5 mt-1.5">
+                          {lesson.warak_pdf_url && (
+                            <span className="text-[10px] font-bold text-[#FBBF24] bg-[#FBBF24]/10 px-2 py-0.5 rounded">
+                              + ورق الدرس PDF
+                            </span>
+                          )}
+                          {quizScore !== null && quizScore !== undefined && (
+                            <span className="text-[10px] font-bold text-emerald-300 bg-emerald-500/10 px-2 py-0.5 rounded">
+                              الاختبار: {quizScore}%
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </button>
                   );
